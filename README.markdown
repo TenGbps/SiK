@@ -1,31 +1,64 @@
-SiK
-=====
-Firmware for SiLabs Si1000 - Si102x/3x ISM radios
+# SiK - Firmware for SiLabs Si1000 ISM radios
 
-SiK is a collection of firmware and tools for radios based on the cheap, versatile SiLabs Si1000 SoC.
+### Serveurperso branch specification
 
-## Serveurperso firmware mod for Ham Radio
-https://www.serveurperso.com/?page=robot
+This is a modified 3DR Radio firmware intended for real time data streaming with high frame rate and low latency.
+Original Time Division Duplex (TDD) and Frequency Hopping Spread Spectrum (FHSS) code are removed, resulting a huge performance improvement in this case.
+It offers a easy access through serial port to all most interesting features of the Si4432 (EZRadioPRO transceiver).
 
-## Branch Build Status
-[![Build Status](http://jenkins.hovo.id.au/buildStatus/icon?job=SiK)](http://jenkins.hovo.id.au/job/SiK/)
+ - Advantages over RFM22 are reliability, no CPU time consumed (on hardware UART) and no memory used (no library needed on Arduino).
+ - Advantages over XBee are better latency performance, better frequency choice, no transmit duty cycle limitation and open source.
+ - The 3DRRadio configurator tool can be used but some parameters are changed or removed.
 
-## Documentation
+### Changes in features
+
+"Baud", "Air Speed", "Net ID", "Tx Power", "ECC", "Min Freq", "Max Freq", "# of Channels", "RTS CTS" work as the master branch.
+"Duty Cycle" and "LBT Rssi" are not currently used.
+
+By default on HM-TRP, the RTS and CTS pins are used to drive external RF switches from the bidirectionnal amplifier
+
+### "Mavlink" replaced with "RSSI Reporting"
+
+With remote and local RSSI reporting enabled, you will get four supplementary bytes for each frames received on your ground station.
+Byte order is remoteRssi, remoteNoise, localRssi and localNoise.
+
+ - Select "RawData" to disable this feature and make a transparent serial link.
+ - Select "Mavlink" to add two RSSI reporting bytes at end of each transmitted frames (useful on each remote modem).
+ - Select "LowLatency" to add two RSSI reporting bytes over the serial port for each received frames (useful on the local modem).
+
+### "Op Resend" replaced with "Set Channel"
+
+If this feature is disabled then the transmit and receive frequencies are the same, equal to "Min Freq" (transparent serial link).
+If enabled, you can transmit and receive on different channels, communicate with multiple isolated networks, make frequency hopping, all controlled by your main program.
+You can define up to 250 channel frequencies using "Min Freq", "Max Freq" and "# of Channels".
+Just add two supplementary bytes at the end of each frame you want to transmit, they're not transmitted to the other radios.
+The first byte is used to set the channel immediately before the transmit, the second one is used after transmit to set the receive channel.
+To sum up, a three bytes frame transmit the byte0 on channel byte1 and switch to the receive state on channel byte2.
+
+ - An one byte frame is transmitted as is on the current channel.
+ - A two byte frame can by used to get the noise level of multiple channels (start and length bytes), this is an useful feature to make scanners or spectrum analysers
+
+https://www.youtube.com/watch?v=3v44Nj9NZCc
+
+### "Max Window (ms)" replaced with "Bootloader Main Frequency Override"
+
+Override the frequency band defined by the bootloader.
+Warning, the use of a different frequency band than that provided by the matching stage of your board results in a dramatic performance loss!
+
+ - Valid values are 67 (0x43) for the 433MHz band, 71 (0x47) for the 470MHz band, 134 (0x86) for the 868MHz band, and 145 (0x91) for the 915MHz band.
+
+### End of Serveurperso branch specification
+
 For user documentation please see this site:
 
-http://ardupilot.org/copter/docs/common-sik-telemetry-radio.html
+ http://code.google.com/p/ardupilot-mega/wiki/3DRadio
 
-Addition configuration guide can also be found here:
-
-http://copter.ardupilot.com/wiki/common-optional-hardware/common-telemetry-landingpage/common-3dr-radio-advanced-configuration-and-technical-information/
+SiK is a collection of firmware and tools for radios based on the cheap, versatile SiLabs Si1000 SoC.
 
 Currently, it supports the following boards:
 
  - HopeRF HM-TRP
  - HopeRF RF50-DEMO
- - RFD900
- - RFD900u
- - RFD900p
 
 Adding support for additional boards should not be difficult.
 
@@ -39,7 +72,7 @@ See the user documentation above for a list of current firmware features
 ## What You Will Need
 
  - A Mac OS X or Linux system for building.  Mac users will need the Developer Tools (Xcode) installed.
- - At least two Si1000 - Si102x/3x - based radio devices (just one radio by itself is not very useful).
+ - At least two Si1000-based radio devices (just one radio by itself is not very useful).
  - A [SiLabs USB debug adapter](http://www.silabs.com/products/mcu/Pages/USBDebug.aspx).
  - [SDCC](http://sdcc.sourceforge.net/), version 3.1.0 or later.
  - [EC2Tools](http://github.com/tridge/ec2)
@@ -68,7 +101,6 @@ For the supported boards:
 
  - HM-TRP: hold the CONFIG pin low when applying power to the board.
  - RF50-DEMO: hold the ENTER button down and press RST.
- - RFD900x: hold the BOOT/CTS pin low when applying power to the board.
 
 The uploader application contains a bidirectional serial console that can be used for interacting with the radio firmware.
 
@@ -80,9 +112,7 @@ Take a look at `Firmware/include/board_*.h` for the details of what board suppor
 
 ## Resources
 
-SiLabs have an extensive collection of documentation, application notes and sample code available online.
-
-Start at the [Si1000 product page](http://www.silabs.com/products/wireless/wirelessmcu/Pages/Si1000.aspx) or [Si102x/3x product page](http://www.silabs.com/products/wireless/wirelessmcu/Pages/Si102x-3x.aspx)
+SiLabs have an extensive collection of documentation, application notes and sample code available online.  Start at the [Si1000 product page](http://www.silabs.com/products/wireless/wirelessmcu/Pages/Si1000.aspx)
 
 ## Reporting Problems
 
